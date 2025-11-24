@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+      // File Layout
+      "rootDir": ".",
+      "outDir": "./dist",
+  
+      // Environment Settings
+      "module": "CommonJS",
+      "moduleResolution": "Node",
+      "target": "ES2020",
+  
+      // Required to use: import express from "express"
+      "esModuleInterop": true,
+  
+      // For Node.js types
+      "types": ["node"],
+  
+      // Recommended for Node backend
+      "strict": true,
+      "skipLibCheck": true,
+  
+      // Fix your current error:
+      "verbatimModuleSyntax": false,
+  
+      // Optional but clean
+      "sourceMap": true,
+      "declaration": true
+    },
+    "include": ["src/index.ts"],
+    "exclude": ["node_modules"]
+  }
+  
