@@ -1,14 +1,11 @@
 import { Router } from "express";
-import { signupController } from "../controllers/auth.controller";
+import { signinController, signupController } from "../controllers/auth.controller";
+import { signinSchema, signupSchema } from "../validations/auth.validation";
+import { validate } from "../middlewares/validation.middleware";
 
 const router = Router();
 
-router.post("/signup", signupController);
-router.post("/signin", (req, res) => {
-  res.send("Signin");
-});
-router.post("/signout", (req, res) => {
-  res.send("Signout");
-});
+router.post("/signup", validate(signupSchema), signupController);
+router.post("/signin", validate(signinSchema), signinController);
 
 export default router;
