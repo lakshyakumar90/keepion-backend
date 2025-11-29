@@ -60,4 +60,49 @@ const verifyEmail = async (token: string) => {
     return updatedUser;
   };
 
-export { createUser, findUserByEmail, verifyEmail };
+const findOrCreateGoogleUser = async (profile: any) => {
+  const { id, displayName, emails, photos } = profile;
+  const email = emails[0].value;
+  const avatarUrl = photos[0]?.value;
+
+  try {
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [{ googleId: id }, { email: email }],
+      },
+    });
+
+    if (user) {
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: id,
+            authProvider: user.authProvider === "email" ? "google_linked" : "google",
+            avatarUrl: user.avatarUrl || avatarUrl,
+            emailVerified: true,
+          },
+        });
+      }
+      return user;
+    }
+
+    user = await prisma.user.create({
+      data: {
+        name: displayName,
+        email,
+        googleId: id,
+        authProvider: "google",
+        avatarUrl,
+        emailVerified: true,
+      },
+    });
+
+    return user;
+  } catch (error) {
+    console.error("Error in findOrCreateGoogleUser", error);
+    throw new Error("Failed to authenticate with Google");
+  }
+};
+
+export { createUser, findUserByEmail, verifyEmail, findOrCreateGoogleUser };

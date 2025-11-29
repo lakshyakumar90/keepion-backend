@@ -135,9 +135,35 @@ const signoutController = async (req: Request, res: Response) => {
   }
 };
 
+const googleCallbackController = async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any; // Passport attaches user to req
+    
+    if (!user) {
+      return res.status(401).json({ message: "Authentication failed" });
+    }
+
+    const token = generateToken(user.id, user.email || "");
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    // Redirect to frontend
+    res.redirect(`${process.env.CLIENT_URL || "http://localhost:3000"}`);
+  } catch (error) {
+    console.error("Google Callback Error:", error);
+    res.redirect(`${process.env.CLIENT_URL || "http://localhost:3000"}/signin?error=auth_failed`);
+  }
+};
+
 export {
   signupController,
   signinController,
   signoutController,
   verifyEmailController,
+  googleCallbackController,
 };

@@ -5,6 +5,7 @@ import { Request, Response } from "express";
 import authRoutes from "./routes/auth.routes";
 import { CORS_OPTIONS } from "./config/constants";
 import cookieParser from "cookie-parser";
+import passport from "./config/passport";
 
 dotenv.config();
 const app = express();
@@ -18,6 +19,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(passport.initialize());
 
 app.get("/", (req: Request, res: Response) => {
     res.send("Hello World");
