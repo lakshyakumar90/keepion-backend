@@ -3,6 +3,7 @@ import { prisma } from "../config/database";
 import { createUser, findUserByEmail } from "../services/auth.service";
 import bcrypt from "bcryptjs";
 import { SignupInput, SigninInput } from "../validations/auth.validation";
+import { generateToken } from "../utils/jwt.util";
 
 const signupController = async (req: Request, res: Response) => {
   try {
@@ -24,6 +25,15 @@ const signupController = async (req: Request, res: Response) => {
         .status(500)
         .json({ message: "Failed to create user. Try again later." });
     }
+
+    const token = generateToken(user.id, user.email || "");
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     const { hashedPassword, ...safeUser } = user;
 
@@ -55,11 +65,20 @@ const signinController = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
 
+    const token = generateToken(user.id, user.email || "");
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     const { hashedPassword, ...safeUser } = user;
 
-    return res.status(200).json({ 
-      message: "Signin successful", 
-      user: safeUser 
+    return res.status(200).json({
+      message: "Signin successful",
+      user: safeUser,
     });
   } catch (error) {
     console.error("Signin Error:", error);
