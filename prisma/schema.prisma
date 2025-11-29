@@ -8,12 +8,28 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  email          String?   @unique
-  emailVerified  DateTime?
-  image          String?
-  hashedPassword String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                          String    @id @default(uuid()) @db.Uuid
+  email                       String    @unique
+  name                        String
+  avatarUrl                   String?   @map("avatar_url")
+  googleId                    String?   @unique @map("google_id")
+  authProvider                String    @map("auth_provider")
+  passwordHash                String?   @map("password_hash")
+
+  emailVerified               Boolean   @default(false) @map("email_verified")
+  emailVerificationToken      String?   @map("email_verification_token")
+  emailVerificationExpires    DateTime? @map("email_verification_expires")
+
+  passwordResetToken          String?   @map("password_reset_token")
+  passwordResetExpires        DateTime? @map("password_reset_expires")
+
+  isActive                    Boolean   @default(true) @map("is_active")
+  isEmailNotificationsEnabled Boolean   @default(true) @map("is_email_notifications_enabled")
+
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @default(now()) @map("updated_at")
+  lastLoginAt                 DateTime? @map("last_login_at")
+  deletedAt                   DateTime? @map("deleted_at")
+
+  @@map("users")
 }

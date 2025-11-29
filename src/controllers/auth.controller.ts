@@ -1,9 +1,14 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/database";
-import { createUser, findUserByEmail } from "../services/auth.service";
+import {
+  createUser,
+  findUserByEmail,
+  verifyEmail,
+} from "../services/auth.service";
 import bcrypt from "bcryptjs";
 import { SignupInput, SigninInput } from "../validations/auth.validation";
 import { generateToken } from "../utils/jwt.util";
+import { sendVerificationEmail } from "../utils/email";
 
 const signupController = async (req: Request, res: Response) => {
   try {
@@ -26,6 +31,10 @@ const signupController = async (req: Request, res: Response) => {
         .json({ message: "Failed to create user. Try again later." });
     }
 
+    if (user.emailVerificationToken) {
+      await sendVerificationEmail(user.email, user.emailVerificationToken);
+    }
+
     const token = generateToken(user.id, user.email || "");
 
     res.cookie("token", token, {
@@ -35,14 +44,35 @@ const signupController = async (req: Request, res: Response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    const { hashedPassword, ...safeUser } = user;
+    const { passwordHash, ...safeUser } = user;
 
-    return res
-      .status(201)
-      .json({ message: "User created successfully", user: safeUser });
+    return res.status(201).json({
+      message:
+        "User created successfully. Please check your email to verify your account.",
+      user: safeUser,
+    });
   } catch (error) {
     console.error("Signup Error:", error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const verifyEmailController = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ message: "Invalid verification token" });
+    }
+
+    const user = await verifyEmail(token);
+
+    return res.status(200).json({ message: "Email verified successfully" });
+  } catch (error: any) {
+    console.error("Verification Error:", error);
+    return res
+      .status(400)
+      .json({ message: error.message || "Verification failed" });
   }
 };
 
@@ -56,11 +86,20 @@ const signinController = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (!user.hashedPassword) {
+    if (!user.passwordHash) {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.hashedPassword);
+    if (!user.emailVerified) {
+      return res
+        .status(401)
+        .json({
+          message:
+            "Email not verified. Please check your email for verification.",
+        });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
@@ -74,7 +113,7 @@ const signinController = async (req: Request, res: Response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    const { hashedPassword, ...safeUser } = user;
+    const { passwordHash, ...safeUser } = user;
 
     return res.status(200).json({
       message: "Signin successful",
@@ -86,4 +125,19 @@ const signinController = async (req: Request, res: Response) => {
   }
 };
 
-export { signupController, signinController };
+const signoutController = async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("token");
+    return res.status(200).json({ message: "Signout successful" });
+  } catch (error) {
+    console.error("Signout Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export {
+  signupController,
+  signinController,
+  signoutController,
+  verifyEmailController,
+};
