@@ -105,4 +105,37 @@ const findOrCreateGoogleUser = async (profile: any) => {
   }
 };
 
-export { createUser, findUserByEmail, verifyEmail, findOrCreateGoogleUser };
+const resendVerificationToken = async (email: string) => {
+  const user = await prisma.user.findFirst({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.emailVerified) {
+    throw new Error("Email already verified");
+  }
+
+  const emailVerificationToken = generateEmailVerificationToken();
+  const emailVerificationExpires = generateEmailVerificationTokenExpires();
+
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerificationToken,
+      emailVerificationExpires,
+    },
+  });
+
+  return updatedUser;
+};
+
+export {
+  createUser,
+  findUserByEmail,
+  verifyEmail,
+  findOrCreateGoogleUser,
+  resendVerificationToken,
+};

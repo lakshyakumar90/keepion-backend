@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { signinController, signupController, verifyEmailController, googleCallbackController } from "../controllers/auth.controller";
+import { signinController, signupController, verifyEmailController, googleCallbackController, resendVerificationController } from "../controllers/auth.controller";
 import { signinSchema, signupSchema } from "../validations/auth.validation";
 import { validate } from "../middlewares/validation.middleware";
 import { signoutController } from "../controllers/auth.controller";
@@ -11,6 +11,7 @@ router.post("/signup", validate(signupSchema), signupController);
 router.post("/signin", validate(signinSchema), signinController);
 router.post("/signout", signoutController);
 router.get("/verify-email", verifyEmailController);
+router.post("/resend-verification", resendVerificationController);
 
 // Google Auth Routes
 router.get(
